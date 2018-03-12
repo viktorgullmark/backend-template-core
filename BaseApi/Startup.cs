@@ -1,59 +1,55 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.IISIntegration;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
-using BaseBackend.Contexts;
-using Microsoft.AspNetCore.Identity;
+using TimeTrackerBackend.Models;
+using TimeTrackerBackend.Repositories;
 
-namespace BaseApi
+namespace TimeTrackerApi
 {
-    public partial class Startup
+    public class Startup
     {
-        public Startup(IHostingEnvironment env)
-        {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
-                .AddEnvironmentVariables();
-            Configuration = builder.Build();      
-        }
+        public static IConfiguration Configuration { get; private set; }
 
-        public IConfigurationRoot Configuration { get; }
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            // Add framework services.
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowOrigin",
+                    builder =>
+                    {
+                        builder.AllowAnyOrigin();
+                    });
+            });
+
             services.AddMvc();
 
-            var connectionString = @"Server=localhost;Database=BaseDb;Trusted_Connection=true";
-
-            // Set up migrations
-            services.AddDbContext<BaseContext>(x => x.UseSqlServer(connectionString, o => o.MigrationsAssembly("BaseBackend")));
-
-            // Add identity to the scope
-            services.AddIdentity<IdentityUser, IdentityRole>()
-                .AddEntityFrameworkStores<BaseContext>()
-                .AddDefaultTokenProviders();
+            // Lifetime for contexts
+            services.AddDbContext<BaseDbContext>(options => options.UseSqlServer(Configuration["SecuritySettings:ConnectionString"]));
+            services.AddScoped<IUserRepository, UserRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-            loggerFactory.AddDebug();
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+
+            app.UseCors("AllowOrigin");
+
+            app.UseDatabaseErrorPage();
 
             app.UseMvc();
-            ConfigureAuth(app);
-            app.UseIdentity();
         }
     }
 }

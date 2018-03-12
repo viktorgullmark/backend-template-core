@@ -1,32 +1,31 @@
-﻿using BaseBackend.Contexts;
-using BaseBackend.Interfaces;
+﻿using TimeTrackerBackend.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
+using TimeTrackerBackend.Models;
 
-namespace BaseBackend.Repositories
+namespace TimeTrackerBackend.Repositories
 {
-    public abstract class GenericRepository<C, T> : IRepository<T> where C : BaseContext where T : class
+
+    public class GenericRepository<TEntity> : IGenericRepository<TEntity>
+    where TEntity : class
     {
-        public C DbContext;
+        private readonly BaseDbContext _dbContext;
 
-        protected GenericRepository()
+        public GenericRepository(BaseDbContext dbContext)
         {
+            _dbContext = dbContext;
         }
 
-        protected GenericRepository(C dbContext)
+        public async Task<IList<TEntity>> List()
         {
-            DbContext = dbContext;
+            return await _dbContext.Set<TEntity>().ToListAsync();
         }
 
-        public IEnumerable<T> List => DbContext.Set<T>().ToList();
-
-        public virtual T SetCreatedDate(T entity)
+        public virtual TEntity SetCreatedDate(TEntity entity)
         {
             var type = entity.GetType();
             var prop = type.GetProperty("Created");
@@ -36,7 +35,7 @@ namespace BaseBackend.Repositories
             return entity;
         }
 
-        public virtual T SetModifiedDate(T entity)
+        public virtual TEntity SetModifiedDate(TEntity entity)
         {
             var type = entity.GetType();
             var prop = type.GetProperty("Modified");
@@ -46,7 +45,7 @@ namespace BaseBackend.Repositories
             return entity;
         }
 
-        public virtual T SetGuid(T entity)
+        public virtual TEntity SetGuid(TEntity entity)
         {
             var type = entity.GetType();
             var prop = type.GetProperty("Guid");
@@ -56,49 +55,49 @@ namespace BaseBackend.Repositories
             return entity;
         }
 
-        public virtual async Task<T> Insert(T entity)
+        public virtual async Task<TEntity> Insert(TEntity entity)
         {
             SetCreatedDate(entity);
             SetModifiedDate(entity);
             SetGuid(entity);
 
-            DbContext.Set<T>().Add(entity);
+            _dbContext.Set<TEntity>().Add(entity);
             await SaveAsync();
             return entity;
         }
 
         public virtual async Task<bool> SaveAsync()
         {
-            return await DbContext.SaveChangesAsync() > 0;
+            return await _dbContext.SaveChangesAsync() > 0;
         }
 
-        public virtual async Task<T> Delete(T entity)
+        public virtual async Task<TEntity> Delete(TEntity entity)
         {
-            DbContext.Set<T>().Remove(entity);
+            _dbContext.Set<TEntity>().Remove(entity);
             SetModifiedDate(entity);
             await SaveAsync();
             return entity;
         }
 
-        public virtual async Task<T> Update(T entity)
+        public virtual async Task<TEntity> Update(TEntity entity)
         {
-            DbContext.Entry(entity).State = EntityState.Modified;
+            _dbContext.Set<TEntity>().Update(entity);
             SetModifiedDate(entity);
             await SaveAsync();
             return entity;
         }
 
-        public virtual async Task<T> FindAsync(params object[] keyValues)
+        public virtual async Task<TEntity> FindAsync(params object[] keyValues)
         {
-            return await DbContext.Set<T>().FindAsync(keyValues);
+            return await _dbContext.Set<TEntity>().FindAsync(keyValues);
         }
-        public virtual async Task<T> FindAsync(Expression<Func<T, bool>> predicate)
+        public virtual async Task<TEntity> FindAsync(Expression<Func<TEntity, bool>> predicate)
         {
-            return await DbContext.Set<T>().FirstOrDefaultAsync(predicate);
+            return await _dbContext.Set<TEntity>().FirstOrDefaultAsync(predicate);
         }
-        public virtual async Task<T> FindAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includeProperties)
+        public virtual async Task<TEntity> FindAsync(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includeProperties)
         {
-            IQueryable<T> query = DbContext.Set<T>();
+            IQueryable<TEntity> query = _dbContext.Set<TEntity>();
             query = includeProperties.Aggregate(query, (current, includeProperty) => current.Include(includeProperty));
             return await query.FirstOrDefaultAsync(predicate);
         }

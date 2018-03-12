@@ -3,7 +3,7 @@
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "http://localhost:61934/",
+      "applicationUrl": "http://localhost:57310/",
       "sslPort": 0
     }
   },
@@ -11,19 +11,10 @@
     "IIS Express": {
       "commandName": "IISExpress",
       "launchBrowser": true,
-      "launchUrl": "api/account",
+      "launchUrl": "api/account/test",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
-    },
-    "BaseApi": {
-      "commandName": "Project",
-      "launchBrowser": true,
-      "launchUrl": "api/account",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "applicationUrl": "http://localhost:61935"
     }
   }
 }

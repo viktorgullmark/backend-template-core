@@ -1,72 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
-using BaseBackend.Contexts;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using BaseApi.Models;
-using BaseBackend.Entities;
-using BaseBackend.Services;
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Configuration;
+using TimeTrackerApi.Models;
+using TimeTrackerBackend.Repositories;
 
-namespace BaseApi.Controllers
+namespace TimeTrackerApi.Controllers
 {
-    [Route("api/Account")]
+    [EnableCors("AllowOrigin")]
+    [Route("api/[controller]")]
     public class AccountController : Controller
     {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly IConfiguration _config;
+        private readonly IUserRepository _userRepository;
 
-        private BaseContext _dbContext;
-
-        private readonly TestService _testService;
-
-        public AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, BaseContext dbContext)
+        public AccountController(IConfiguration config, IUserRepository userRepository)
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _dbContext = dbContext;
-
-            // instantiate services
-            _testService = new TestService(_dbContext);
+            _config = config;
+            _userRepository = userRepository;
         }
 
-        [Route("Register")]
-        [HttpPost]
-        public async Task<IActionResult> Register(RegisterModel model)
-        {
-            if (model.Password != model.ConfirmPassword)
-            {
-                ModelState.AddModelError("Error", "Passwords don't match");
-                return BadRequest(ModelState);
-            }
-
-            var newUser = new IdentityUser
-            {
-                UserName = model.Email,
-                Email = model.Email
-            };
-
-            var userCreationResult = await _userManager.CreateAsync(newUser, model.Password);
-            if (!userCreationResult.Succeeded)
-            {
-                foreach (var error in userCreationResult.Errors)
-                    ModelState.AddModelError("Error", error.Description);
-                return BadRequest(ModelState);
-            }
-
-            return Ok();
-        }
-
-        // test-endpoint
-        [Route("Test")]
         [HttpGet]
-        public async Task<Test> Test()
+        [Route("Test")]
+        public IActionResult Test()
         {
-            var test = await _testService.GetTestById(1);
-            return test;
+            return Ok(new { Message = "Up and running!" });
         }
     }
 }
